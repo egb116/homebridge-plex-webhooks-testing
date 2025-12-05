@@ -7,5 +7,5 @@ module.exports = (api) => {
     throw new Error('Homebridge API not available — cannot register platform.');
   }
 
-  api.registerPlatform('PlexWebhooks', PlexWebhooksPlatform);
+  api.registerPlatform('PlexWebhooksHB2', PlexWebhooksPlatform);
 };
