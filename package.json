@@ -1,0 +1,61 @@
+{
+  "name": "homebridge-plex-webhooks",
+  "version": "3.0.0-beta1",
+  "description": "Homebridge 2.0 Plex Webhooks Server",
+  "main": "index.js",
+  "scripts": {
+    "start": "homebridge",
+    "test": "mocha tests/**/*.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/egb116/homebridge-plex-webhooks.git"
+  },
+  "keywords": [
+    "homebridge",
+    "homebridge-plugin",
+    "plex",
+    "webhook",
+    "webhooks",
+    "server"
+  ],
+  "author": "Eric Bowers",
+  "engines": {
+    "homebridge": "^1.6.0 || ^2.0.0-beta.0",
+    "node": "^18.20.4 || ^20.15.1 || ^22 || ^24"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "config.schema.json",
+    "index.js",
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
+  "funding": {
+    "type": "buymeacoffee",
+    "url": "https://buymeacoffee.com/ericbowers"
+  },
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/egb116/homebridge-plex-webhooks/issues"
+  },
+  "homepage": "https://github.com/egb116/homebridge-plex-webhooks#readme",
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "chalk": "^4.1.0",
+    "express": "^4.19.0",
+    "ip": "^1.1.5",
+    "lodash": "^4.17.20",
+    "multer": "^1.4.2"
+  },
+  "peerDependencies": {
+    "homebridge": "^1.6.0 || ^2.0.0"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^10.8.2",
+    "sinon": "^9.2.3",
+    "sinon-chai": "^3.5.0"
+  }
+}
