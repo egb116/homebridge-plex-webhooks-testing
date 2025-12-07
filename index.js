@@ -1,6 +1,6 @@
 'use strict';
 
-const { PlexWebhooksPlatform } = require('./src/platform');
+const PlexWebhooksPlatform = require('./src/platform');
 const { PLATFORM_NAME } = require('./src/settings');
 
 /**
