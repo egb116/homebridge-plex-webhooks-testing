@@ -40,7 +40,7 @@ class PlexWebhooksPlatform {
 
     this._cleanFilters();
 
-    // Homebridge hook: run after all cached accessories restored
+    // Ensure nothing else runs until Homebridge finishes launching
     this.api.on('didFinishLaunching', async () => {
       try {
         await this._setupAccessories();
@@ -51,6 +51,9 @@ class PlexWebhooksPlatform {
     });
   }
 
+  /**
+   * Called when Homebridge restores cached accessories
+   */
   configureAccessory(accessory) {
     this.log.debug(
       'Loading accessory from cache:',
@@ -64,6 +67,9 @@ class PlexWebhooksPlatform {
     }
   }
 
+  /**
+   * Clean up filter definitions in config
+   */
   _cleanFilters() {
     const cleanFilters = (filters) => {
       if (!filters || filters.length === 0) return [];
@@ -78,6 +84,9 @@ class PlexWebhooksPlatform {
     });
   }
 
+  /**
+   * Setup all accessories after Homebridge finishes launching
+   */
   async _setupAccessories() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
     const keepIds = new Set();
