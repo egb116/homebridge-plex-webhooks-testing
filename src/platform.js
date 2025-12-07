@@ -92,42 +92,41 @@ class PlexWebhooksPlatform {
   }
 
   /**
-   * Main discovery logic (runs after didFinishLaunching)
-   */
+   * Main discovery logic (runs after didFinishLaunching)
+   */
   _discoverAccessories() {
-    const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
-    const discoveredUUIDs = [];
+      const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
+      const discoveredUUIDs = [];
 
-    for (const sensor of sensors) {
-      const uuid = sensor.uuid; // Already generated in config-helper
-      let accessory = this.accessories.get(uuid);
+      for (const sensor of sensors) {
+        const uuid = sensor.uuid; // Already generated in config-helper
+        let accessory = this.accessories.get(uuid);
 
-      if (accessory) {
-        // Already restored from cache, just wrap and update context
-        this.log.info(`Restoring accessory [${sensor.name}] (${uuid}) from cache...`);
-        
-        // Update context and name just in case config changed
-        accessory.context.sensor = sensor;
-        accessory.displayName = sensor.name; // Use the current config name
-        
-        // Initialize the accessory wrapper with the restored accessory object
-        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
-      } else {
-        // New accessory: create and register
-        this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
-        accessory = new this.api.platformAccessory(sensor.name, uuid);
-        accessory.context.sensor = sensor;
+        if (accessory) {
+          // Already restored from cache, just wrap and update
+          this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
+          accessory.context.sensor = sensor;
+          new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+        } else {
+          // New accessory: create and register
+          this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
+          accessory = new this.api.platformAccessory(sensor.name, uuid);
+          accessory.context.sensor = sensor;
 
-        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+          // >>>>>> FIX APPLIED HERE: REGISTER BEFORE INITIALIZING THE WRAPPER <<<<<<
 
-        // Register with Homebridge
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          // Register with Homebridge FIRST
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
-        // Cache for future restarts
-        this.accessories.set(uuid, accessory);
+          // Now initialize the wrapper, which will safely call addService
+          new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+
+          // Cache for future restarts
+          this.accessories.set(uuid, accessory);
+        }
+
+        discoveredUUIDs.push(uuid);
       }
-
-      discoveredUUIDs.push(uuid);
     }
 
     // Remove cached accessories no longer in config
