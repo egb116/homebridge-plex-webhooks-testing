@@ -82,31 +82,46 @@ class PlexWebhooksPlatform {
     const discoveredUUIDs = [];
 
     for (const sensor of sensors) {
-      const uuid = sensor.uuid;
+      const uuid = sensor.uuid || this.api.hap.uuid.generate(sensor.name);
 
-      // Check cache first
+      // Check if we already restored this accessory from cache
       let accessory = this.accessories.get(uuid);
 
       if (accessory) {
-        // Cached accessory: just update context and wrap it
-        this.log.info(`Using cached accessory [${sensor.name}] (${uuid})`);
+        // Existing accessory: update context and wrap it
+        this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
         accessory.context.sensor = sensor;
+        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
       } else {
-        // Brand-new accessory: create and register
-        this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
-        accessory = new this.api.platformAccessory(sensor.name, uuid);
-        accessory.context.sensor = sensor;
+        // Check if Homebridge already knows about this UUID
+        const existingBridged = this.api.platformAccessory?.UUID === uuid; // single accessory check
+        // In case of multiple, you could iterate over this.api.platformAccessories if available
 
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        if (!existingBridged) {
+          // New accessory: create and register it
+          this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
+          accessory = new this.api.platformAccessory(sensor.name, uuid);
+          accessory.context.sensor = sensor;
+
+          new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+
+          // Register only if Homebridge does not already know about it
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        } else {
+          // Already bridged by Homebridge: just create wrapper without registering
+          this.log.info(`Accessory [${sensor.name}] (${uuid}) already bridged by Homebridge, skipping registration`);
+          accessory = new this.api.platformAccessory(sensor.name, uuid);
+          accessory.context.sensor = sensor;
+          new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+        }
+
         this.accessories.set(uuid, accessory);
       }
 
-      // Wrap the accessory for our platform
-      new PlexWebhooksPlatformAccessory(this, accessory, sensor);
       discoveredUUIDs.push(uuid);
     }
 
-    // Remove obsolete accessories
+    // Remove any cached accessories no longer in config
     for (const [uuid, accessory] of this.accessories) {
       if (!discoveredUUIDs.includes(uuid)) {
         this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
