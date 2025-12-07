@@ -1,3 +1,5 @@
+'use strict';
+
 const {
   PKG_AUTHOR,
   PKG_NAME,
@@ -34,19 +36,22 @@ class PlexWebhooksPlatformAccessory {
 
     /**
      * ----- OCCUPANCY SENSOR SERVICE -----
+     * Use sensor.uuid as the service subtype to guarantee unique UUID per service
      */
     this.service =
-      this.accessory.getService(Service.OccupancySensor) ||
-      this.accessory.addService(Service.OccupancySensor);
+      this.accessory.getServiceById(Service.OccupancySensor, sensor.uuid) ||
+      this.accessory.addService(Service.OccupancySensor, sensor.name, sensor.uuid);
 
+    // Set sensor name
     this.service.setCharacteristic(Characteristic.Name, sensor.name);
 
+    // Handle GET requests for occupancy state
     this.service
       .getCharacteristic(Characteristic.OccupancyDetected)
       .onGet(() => this.getState());
 
     /**
-     * ----- IDENTIFY HANDLER (correct way) -----
+     * ----- IDENTIFY HANDLER -----
      */
     this.accessory.on('identify', () => {
       this.log.info(`${this.accessory.displayName} identified`);
