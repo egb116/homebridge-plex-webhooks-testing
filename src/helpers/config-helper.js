@@ -10,7 +10,7 @@ const expandConfig = (api, config) => {
       : `Sensor ${index + 1}`;
 
     // Use IMMUTABLE ID seed if provided
-    const idSeed = sensor.id || sensor.name || index;
+    const idSeed = `${sensor.name}-${sensor.id || index}`;
 
     // UUID must be stable and unique
     const uuid = hap.uuid.generate(`plex-webhook-sensor:${idSeed}`);
