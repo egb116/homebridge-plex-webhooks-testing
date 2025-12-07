@@ -57,7 +57,6 @@ class FilterHelper {
       return true;
     }
 
-    // At least one filter group must match (OR logic)
     for (let i = 0; i < this.filters.length; i++) {
       const group = this.filters[i];
 

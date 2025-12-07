@@ -17,15 +17,10 @@ class PlexWebhooksPlatformAccessory {
     this.sensor = sensor;
     this.log = platform.log;
 
-    // Ensure context is up-to-date
     this.accessory.context.sensor = sensor;
 
-    // Set default internal state
     this.state = 'media.stop';
 
-    /**
-     * ----- ACCESSORY INFORMATION -----
-     */
     const info = this.accessory.getService(Service.AccessoryInformation);
 
     info
@@ -34,32 +29,20 @@ class PlexWebhooksPlatformAccessory {
       .setCharacteristic(Characteristic.FirmwareRevision, PKG_VERSION)
       .setCharacteristic(Characteristic.SerialNumber, sensor.serial);
 
-    /**
-     * ----- OCCUPANCY SENSOR SERVICE -----
-     * Use sensor.uuid as the service subtype to guarantee unique UUID per service
-     */
     this.service =
       this.accessory.getServiceById(Service.OccupancySensor, sensor.uuid) ||
       this.accessory.addService(Service.OccupancySensor, sensor.name, sensor.uuid);
 
-    // Set sensor name
-    this.service.setCharacteristic(Characteristic.Name, sensor.name);
+      this.service.setCharacteristic(Characteristic.Name, sensor.name);
 
-    // Handle GET requests for occupancy state
     this.service
       .getCharacteristic(Characteristic.OccupancyDetected)
       .onGet(() => this.getState());
 
-    /**
-     * ----- IDENTIFY HANDLER -----
-     */
     this.accessory.on('identify', () => {
       this.log.info(`${this.accessory.displayName} identified`);
     });
 
-    /**
-     * ----- STATE CHANGE EVENT LISTENER -----
-     */
     platform.emitter.on('stateChange', this.setState.bind(this));
   }
 

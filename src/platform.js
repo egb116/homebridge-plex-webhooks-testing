@@ -13,21 +13,10 @@ class PlexWebhooksPlatform {
     this.api = api;
     this.emitter = new EventEmitter();
 
-    this.log.warn(
-      'ORIGINAL CONFIG RECEIVED FROM HOMEBRIDGE:',
-      JSON.stringify(config, null, 2)
-    );
-
     this.config = expandConfig(api, config || {});
-    this.log.warn(
-      'EXPANDED CONFIG:',
-      JSON.stringify(this.config, null, 2)
-    );
 
-    // Map of cached/restored accessories keyed by sensor.id
     this.platformAccessories = new Map();
 
-    // Verbose logging helper
     this.log.verbose = (msg) => {
       if (this.config.verbose) this.log.info(msg);
       else this.log.debug(msg);
@@ -35,18 +24,16 @@ class PlexWebhooksPlatform {
 
     this._cleanFilters();
 
-    // Only run setup after Homebridge finishes launching
     this.api.on('didFinishLaunching', async () => {
       try {
-        await this._setupAccessories();   // Register new accessories safely
-        this._startWebhookServer();       // Start webhook server after accessories
+        await this._setupAccessories();
+        this._startWebhookServer();
       } catch (err) {
         this.log.error('Error during platform launch:', err);
       }
     });
   }
 
-  // Homebridge calls this to restore cached accessories
   configureAccessory(accessory) {
     const sensorId = accessory.context.sensor?.id || accessory.displayName;
     if (sensorId) {
@@ -79,81 +66,61 @@ class PlexWebhooksPlatform {
           const sensorId = sensor.id || sensor.name || `Sensor-${index + 1}`;
           keepIds.add(sensorId);
 
-          // *** Use the pre-calculated UUID from the config ***
           const uuidFromConfig = sensor.uuid; 
 
-          // 1. Check if the accessory was restored from the Homebridge cache
           let accessory = this.platformAccessories.get(sensorId); 
 
           if (!accessory) {
-              // Accessory not found in cache (first load or new accessory). Proceed to create/register.
-            
-              // LOGGING: Use the correct UUID
               this.log.info(`Queued registration for new accessory [${sensor.name}] (${uuidFromConfig})`);
 
-              // Create the in-memory accessory object using the pre-calculated UUID
               accessory = new this.api.platformAccessory(sensor.name, uuidFromConfig);
-              accessory.context.sensor = sensor; // Attach the full sensor object
+              accessory.context.sensor = sensor;
 
               try {
-                  // Attempt to register the new accessory
                   this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
                   this.platformAccessories.set(sensorId, accessory);
 
               } catch (err) {
-                  // Handle the "already bridged" error automatically
                   if (err.message.includes('already bridged')) {
                       this.log.warn(
-                          // LOGGING: Use the correct UUID
                           `Registration failed for [${sensor.name}] (${uuidFromConfig}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
                       );
                     
-                      // Attempt A: Search the map again
                       const recoveredAccessory = Array.from(this.platformAccessories.values())
-                          // Use the correct UUID for the find operation
-                          .find(acc => acc.UUID === uuidFromConfig || acc.displayName === sensor.name);
+                      .find(acc => acc.UUID === uuidFromConfig || acc.displayName === sensor.name);
 
                       if (recoveredAccessory) {
-                          this.log.info(`Recovery successful (found in map). Reusing accessory.`);
+                          this.log.warn(`Recovery successful (found in map). Reusing accessory.`);
                           accessory = recoveredAccessory;
                       } else if (accessory) { 
-                          this.log.info(`Recovery successful (using in-memory object). Reusing accessory.`);
-                          // The 'accessory' variable already holds the object we need.
+                          this.log.warn(`Recovery successful (using in-memory object). Reusing accessory.`);
                       } else {
-                          // If all recovery steps fail, log the error and skip.
                           this.log.error(
-                              // LOGGING: Use the correct UUID
                               `Failed to register and recover accessory [${sensor.name}] (${uuidFromConfig}):`,
                               err.message
                           );
-                          continue; // skip this sensor
+                          continue;
                       }
                     
-                      // Finalize recovery: Update context and ensure it's mapped correctly.
                       accessory.context.sensor = sensor; 
                       this.platformAccessories.set(sensorId, accessory); 
 
                   } else {
-                      // Handle other, unexpected errors
                       this.log.error(
-                          // LOGGING: Use the correct UUID
                           `Failed to register accessory [${sensor.name}] (${uuidFromConfig}):`,
                           err.message
                       );
-                      continue; // skip this sensor
+                      continue;
                   }
               } 
           } else {
-              // Accessory found in cache (subsequent run). Update context with the latest config.
               this.log.info(`Reusing existing accessory [${sensor.name}] (${accessory.UUID})`);
               accessory.context.sensor = sensor;
           }
 
-          // Initialize accessory wrapper. Sensor contains UUID and SERIAL.
           new PlexWebhooksPlatformAccessory(this, accessory, sensor);
       }
 
-      // Remove stale cached accessories (rest of the function is unchanged)
       for (const [id, accessory] of this.platformAccessories.entries()) {
           if (!keepIds.has(id)) {
               this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
@@ -198,8 +165,7 @@ class PlexWebhooksPlatform {
           return filterHelper.match();
         })
         .forEach((sensor) => {
-          // *** Use the pre-calculated UUID from the sensor object ***
-          const uuid = sensor.uuid; 
+            const uuid = sensor.uuid; 
           this.emitter.emit('stateChange', payload.event, uuid);
         });
     }

@@ -11,11 +11,9 @@ class WebhooksServer {
     this.log = log;
     this.callback = callback;
 
-    // SAFER DEFAULTS for Homebridge, Docker, and multi-NIC systems
     this.port = get(config, 'server.port', LISTENING_PORT);
     this.address = get(config, 'server.address', '0.0.0.0');
 
-    // Multer for multipart/form-data (Plex sends the 'thumb' file this way)
     this.upload = multer({ dest: '/tmp/' });
 
     this.httpServer = null;
@@ -46,24 +44,16 @@ class WebhooksServer {
     const { log, callback, port, address, upload } = this;
     const app = express();
 
-    // === GLOBAL MIDDLEWARE ===============================================
-
-    // Ensure we can read urlencoded bodies if Plex ever sends them this way
     app.use(express.urlencoded({ extended: true }));
 
-    // Also accept JSON (not used by Plex, but improves dev/test)
     app.use(express.json());
 
-    // === ROUTES ===========================================================
-
-    // 1) Main webhook endpoint – Plex sends multipart/form-data
     app.post(
       '/',
       upload.single('thumb'),
       (req, res) => {
         const rawPayload = get(req.body, 'payload', '');
 
-        // Debug logging for troubleshooting
         log.debug?.(`Raw Plex Payload: ${rawPayload}`);
 
         if (!rawPayload) {
@@ -89,21 +79,17 @@ class WebhooksServer {
       }
     );
 
-    // 2) Optional endpoint: used by Plex testers or manual GET requests
     app.post('/test', (req, res) => {
       log.debug('Received /test POST from Plex or tester.');
       res.sendStatus(200);
     });
 
-    // 3) Landing page
     app.get('/', (_req, res) => {
       res
         .type('html')
         .status(200)
         .send(landingPage(`http://${address}:${port}`));
     });
-
-    // === START SERVER =====================================================
 
     this.httpServer = app
       .listen(port, address, () => {
@@ -112,10 +98,6 @@ class WebhooksServer {
       .on('error', this.errorHandler.bind(this));
   }
 
-  /**
-   * Called by the Homebridge platform when Homebridge shuts down.
-   * Prevents orphaned listeners and "port in use" errors.
-   */
   close() {
     if (this.httpServer) {
       this.log.info('Shutting down Plex Webhooks server...');

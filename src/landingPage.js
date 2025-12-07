@@ -5,9 +5,6 @@ const escapeHtml = (str) =>
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
   ));
 
-/**
- * Landing page shown when visiting http://host:port/
- */
 const landingPage = (url) => {
   const safeUrl = escapeHtml(url);
 
