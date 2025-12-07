@@ -79,14 +79,15 @@ class PlexWebhooksPlatform {
           const sensorId = sensor.id || sensor.name || `Sensor-${index + 1}`;
           keepIds.add(sensorId);
 
-          // Check cache first (accessory restored by configureAccessory)
+          // 1. Check if the accessory was restored from the Homebridge cache
           let accessory = this.platformAccessories.get(sensorId); 
 
           if (!accessory) {
-              // Accessory not found in cache (first load or new accessory)
+              // Accessory not found in cache (first load or new accessory). Proceed to create/register.
               const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${sensorId}`);
               this.log.info(`Queued registration for new accessory [${sensor.name}] (${uuid})`);
 
+              // Create the in-memory accessory object
               accessory = new this.api.platformAccessory(sensor.name, uuid);
               accessory.context.sensor = sensor;
 
@@ -96,29 +97,36 @@ class PlexWebhooksPlatform {
                   this.platformAccessories.set(sensorId, accessory);
 
               } catch (err) {
-                  // This block handles the "already bridged" error gracefully on first run
+                  // Handle the "already bridged" error automatically
                   if (err.message.includes('already bridged')) {
                       this.log.warn(
-                          `Registration failed for [${sensor.name}] (${uuid}). Accessory appears to be bridged but was not in cache. Attempting recovery.`
+                          `Registration failed for [${sensor.name}] (${uuid}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
                       );
                     
-                      // Try to find the conflicting accessory in the map by UUID or name
+                      // Attempt A: Search the map again (in case configureAccessory ran between try/catch)
                       const recoveredAccessory = Array.from(this.platformAccessories.values())
                           .find(acc => acc.UUID === uuid || acc.displayName === sensor.name);
 
                       if (recoveredAccessory) {
-                          this.log.info(`Recovery successful for [${sensor.name}]. Reusing existing accessory.`);
+                          this.log.info(`Recovery successful (found in map). Reusing accessory.`);
                           accessory = recoveredAccessory;
-                          accessory.context.sensor = sensor; // Update context
-                          this.platformAccessories.set(sensorId, accessory); // Ensure map is correct
+                      } else if (accessory) { 
+                          // Attempt B: Use the accessory object created just before the failed registration.
+                          this.log.info(`Recovery successful (using in-memory object). Reusing accessory.`);
+                          // The 'accessory' variable already holds the object we need.
                       } else {
-                          // If recovery fails, log error and skip
+                          // If all recovery steps fail, log the error and skip.
                           this.log.error(
                               `Failed to register and recover accessory [${sensor.name}] (${uuid}):`,
                               err.message
                           );
                           continue; // skip this sensor
                       }
+                    
+                      // Finalize recovery: Update context and ensure it's mapped correctly.
+                      accessory.context.sensor = sensor; 
+                      this.platformAccessories.set(sensorId, accessory); 
+
                   } else {
                       // Handle other, unexpected errors
                       this.log.error(
@@ -127,7 +135,7 @@ class PlexWebhooksPlatform {
                       );
                       continue; // skip this sensor
                   }
-              }
+              } 
           } else {
               // Accessory found in cache (subsequent run), so we reuse it.
               this.log.info(`Reusing existing accessory [${sensor.name}] (${accessory.UUID})`);
