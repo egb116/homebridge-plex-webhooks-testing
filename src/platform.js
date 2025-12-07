@@ -92,7 +92,7 @@ class PlexWebhooksPlatform {
                       if (recoveredAccessory) {
                           this.log.info(`Recovery successful (found in map). Reusing accessory.`);
                           accessory = recoveredAccessory;
-                      } else if (accessory) { 
+                      } else if (accessory) {
                           this.log.info(`Recovery successful (using in-memory object). Reusing accessory.`);
                       } else {
                           this.log.error(
@@ -102,8 +102,8 @@ class PlexWebhooksPlatform {
                           continue;
                       }
                     
-                      accessory.context.sensor = sensor; 
-                      this.platformAccessories.set(sensorId, accessory); 
+                      accessory.context.sensor = sensor;
+                      this.platformAccessories.set(sensorId, accessory);
 
                   } else {
                       this.log.error(
@@ -112,7 +112,7 @@ class PlexWebhooksPlatform {
                       );
                       continue;
                   }
-              } 
+              }
           } else {
               this.log.info(`Reusing existing accessory [${sensor.name}] (${accessory.UUID})`);
               accessory.context.sensor = sensor;
