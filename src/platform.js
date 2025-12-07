@@ -74,12 +74,21 @@ class PlexWebhooksPlatform {
     const keepIds = new Set();
 
     this._logAccessoriesFoundInConfig();
+    
+    const getAccessoryWithRetry = async (sensorId, attempts = 5, delayMs = 1000) => {
+      for (let i = 0; i < attempts; i++) {
+        const accessory = this.platformAccessories.get(sensorId);
+        if (accessory) return accessory;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+      return undefined;
+    };
 
     for (const [index, sensor] of sensors.entries()) {
       const sensorId = sensor.id || sensor.name || `Sensor-${index + 1}`;
       keepIds.add(sensorId);
 
-      let accessory = this.platformAccessories.get(sensorId);
+      let accessory = await getAccessoryWithRetry(sensorId);
 
       if (!accessory) {
         const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${sensorId}`);
