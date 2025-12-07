@@ -9,9 +9,9 @@ const { PLUGIN_NAME, PLATFORM_NAME } = require('./settings');
 
 class PlexWebhooksPlatform {
     constructor(log, config, api) {
-        this.log.warn("ORIGINAL CONFIG RECEIVED FROM HOMEBRIDGE:", JSON.stringify(config, null, 2));
         
         this.log = log;
+        this.log.warn("ORIGINAL CONFIG RECEIVED FROM HOMEBRIDGE:", JSON.stringify(config, null, 2));
         this.api = api;
         this.config = expandConfig(api, config || {});
         
