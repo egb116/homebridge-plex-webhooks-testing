@@ -114,66 +114,70 @@ class PlexWebhooksPlatform {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
     const discoveredUUIDs = [];
 
+    // Hold accessories we need to register after the initial loop
+    const accessoriesToRegister = [];
+
     for (const [index, sensor] of sensors.entries()) {
-      // 1️⃣ Generate UUID using stable seed (backwards compatible)
       const seed = sensor.id || sensor.name || `Sensor-${index + 1}`;
       const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${seed}`);
 
       this.log.info(`Sensor: ${JSON.stringify(sensor)}`);
       this.log.info(`UUID: ${uuid}`);
 
-      // 2️⃣ Try to find accessory from restored cache
       let accessory = this.accessories.get(uuid);
-      this.log.info(`Accessory: ${accessory}`);
 
-      // 3️⃣ If not found, check Homebridge globally for same displayName
       if (!accessory) {
+        // Check if accessory exists by displayName (legacy name match)
         accessory = Array.from(this.accessories.values()).find(
           (a) => a.displayName === sensor.name
         );
+
         if (accessory) {
           this.log.info(
-            `Accessory [${sensor.name}] found by displayName, reusing with new UUID (${uuid})`
+            `Accessory [${sensor.name}] found by displayName, mapping to new UUID (${uuid})`
           );
-          // Map it under the new UUID
           this.accessories.set(uuid, accessory);
         }
       }
 
-      // 4️⃣ If still not found, create a new accessory
-      if (!accessory) {
-        this.log.info(`Registering NEW accessory [${sensor.name}] (${uuid})`);
-        accessory = new this.api.platformAccessory(sensor.name, uuid);
-        accessory.context.sensor = sensor;
-
-        try {
-          this.api.registerPlatformAccessories(
-            PLUGIN_NAME,
-            PLATFORM_NAME,
-            [accessory]
-          );
-        } catch (err) {
-          this.log.error(
-            `Failed to register accessory [${sensor.name}] (${uuid}):`,
-            err.message
-          );
-          continue; // skip to next sensor
-        }
-
-        this.accessories.set(uuid, accessory);
-      } else {
-        // 5️⃣ Existing accessory: just update context and reinitialize
+      if (accessory) {
+        // Existing accessory: update context and wrap
         this.log.info(`Reusing existing accessory [${sensor.name}] (${uuid})`);
         accessory.context.sensor = sensor;
+        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+      } else {
+        // New accessory: queue for registration
+        this.log.info(`Queued registration for new accessory [${sensor.name}] (${uuid})`);
+        const newAccessory = new this.api.platformAccessory(sensor.name, uuid);
+        newAccessory.context.sensor = sensor;
+        accessoriesToRegister.push(newAccessory);
+        this.accessories.set(uuid, newAccessory);
       }
-
-      // 6️⃣ Initialize accessory wrapper
-      new PlexWebhooksPlatformAccessory(this, accessory, sensor);
 
       discoveredUUIDs.push(uuid);
     }
 
-    // 7️⃣ Remove stale cached accessories not in config
+    // Register all new accessories in one batch, deferred to next tick
+    if (accessoriesToRegister.length > 0) {
+      process.nextTick(() => {
+        try {
+          this.api.registerPlatformAccessories(
+            PLUGIN_NAME,
+            PLATFORM_NAME,
+            accessoriesToRegister
+          );
+          this.log.info(`Registered ${accessoriesToRegister.length} new accessory(ies)`);
+          // Initialize wrappers
+          for (const acc of accessoriesToRegister) {
+            new PlexWebhooksPlatformAccessory(this, acc, acc.context.sensor);
+          }
+        } catch (err) {
+          this.log.error('Error registering new accessories:', err.message);
+        }
+      });
+    }
+
+    // Remove stale accessories
     for (const [uuid, accessory] of this.accessories.entries()) {
       if (!discoveredUUIDs.includes(uuid)) {
         this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
