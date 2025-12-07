@@ -1,7 +1,7 @@
 import type { API } from 'homebridge';
 
-import { PlexWebhooksPlatform } from './platform.ts';
-import { PLATFORM_NAME } from './settings.ts';
+import { PlexWebhooksPlatform } from './platform.js';
+import { PLATFORM_NAME } from './settings.js';
 
 /**
  * This method registers the platform with Homebridge
