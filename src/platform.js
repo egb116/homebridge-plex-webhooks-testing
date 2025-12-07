@@ -162,7 +162,6 @@ class PlexWebhooksPlatform {
     );
 
     this.server.launch();
-    this.log.info(`Plex Webhooks server listening on http://0.0.0.0:${this.config.server.port}`);
   }
 
   _processPayload(payload) {
