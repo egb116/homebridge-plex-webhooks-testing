@@ -1,11 +1,11 @@
-'use strict';
+import type { API } from 'homebridge';
 
-const PlexWebhooksPlatform = require('./lib/platform');
+import { PlexWebhooksPlatform } from './platform.ts';
+import { PLATFORM_NAME } from './settings.ts';
 
-module.exports = (api) => {
-    if (!api?.registerPlatform) {
-    throw new Error('Homebridge API not available — cannot register platform.');
-  }
-
-  api.registerPlatform('PlexWebhooksHB2', PlexWebhooksPlatform);
+/**
+ * This method registers the platform with Homebridge
+ */
+export default (api: API) => {
+  api.registerPlatform(PLATFORM_NAME, PlexWebhooksPlatform);
 };
