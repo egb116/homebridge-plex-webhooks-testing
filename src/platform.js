@@ -82,24 +82,28 @@ class PlexWebhooksPlatform {
     const discoveredUUIDs = [];
 
     for (const sensor of sensors) {
-      const uuid = sensor.uuid;
-      const existing = this.accessories.get(uuid);
+      // Ensure every sensor has a proper UUID
+      const uuid = sensor.uuid || this.api.hap.uuid.generate(sensor.name);
 
-      if (existing) {
-        // Existing accessory, update its context and wrap it
+      // Check if this accessory was restored from cache
+      const cachedAccessory = this.accessories.get(uuid);
+
+      if (cachedAccessory) {
+        // Existing accessory: update its context and wrap it
         this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
-        new PlexWebhooksPlatformAccessory(this, existing, sensor);
+        cachedAccessory.context.sensor = sensor;
+        new PlexWebhooksPlatformAccessory(this, cachedAccessory, sensor);
+
         discoveredUUIDs.push(uuid);
-
       } else {
-        // New accessory
+        // New accessory: create and register it
         this.log.info(`Registering accessory [${sensor.name}] (${uuid})`);
-
         const accessory = new this.api.platformAccessory(sensor.name, uuid);
         accessory.context.sensor = sensor;
 
         new PlexWebhooksPlatformAccessory(this, accessory, sensor);
 
+        // Register with Homebridge (only for new accessories!)
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         this.accessories.set(uuid, accessory);
 

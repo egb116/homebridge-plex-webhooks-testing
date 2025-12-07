@@ -21,7 +21,7 @@ const expandConfig = (api, config) => {
     return {
       ...sensor,
       name,
-      id: idSeed,     // ensure ID is preserved
+      id: idSeed,
       uuid,
       serial,
     };
