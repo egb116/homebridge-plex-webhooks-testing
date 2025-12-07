@@ -20,10 +20,10 @@ class PlexWebhooksPlatform {
 
         // Verbose logging helper
         this.log.verbose = (msg) => {
-            if (config?.verbose) {
-                log.info(msg);
+            if (this.config.verbose) {
+                this.log.info(msg);
             } else {
-                log.debug(msg);
+                this.log.debug(msg);
             }
         };
 
