@@ -1,7 +1,7 @@
 'use strict';
 
-const { PlexWebhooksPlatform } = require('./platform');
-const { PLATFORM_NAME } = require('./settings');
+const { PlexWebhooksPlatform } = require('./src/platform');
+const { PLATFORM_NAME } = require('./src/settings');
 
 /**
  * This method registers the platform with Homebridge
