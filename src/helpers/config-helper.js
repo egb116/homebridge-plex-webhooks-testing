@@ -1,36 +1,26 @@
 'use strict';
 
 const expandConfig = (api, config) => {
-  const { hap } = api;
   const sensors = Array.isArray(config?.sensors) ? config.sensors : [];
 
-  const sensorsWithUuid = sensors.map((sensor, index) => {
+  const sensorsWithId = sensors.map((sensor, index) => {
     const name = typeof sensor.name === 'string'
       ? sensor.name
       : `Sensor ${index + 1}`;
 
-    // Use IMMUTABLE ID seed if provided
+    // stable ID seed — but DO NOT generate uuid here
     const idSeed = sensor.id || sensor.name;
-
-    // UUID must be stable and unique
-    const uuid = hap.uuid.generate(`plex-webhook-sensor:${idSeed}`);
-    console.log("Generated UUID from config-helper.js:", uuid);
-
-    // Short UUID is optional, but helpful as a serial number
-    const serial = hap.uuid.toShortForm(uuid);
 
     return {
       ...sensor,
       name,
       id: idSeed,
-      uuid,
-      serial,
     };
   });
 
   return {
     ...config,
-    sensors: sensorsWithUuid,
+    sensors: sensorsWithId,
   };
 };
 
