@@ -9,9 +9,13 @@ const { PLUGIN_NAME, PLATFORM_NAME } = require('./settings');
 
 class PlexWebhooksPlatform {
     constructor(log, config, api) {
+        this.log.warn("ORIGINAL CONFIG RECEIVED FROM HOMEBRIDGE:", JSON.stringify(config, null, 2));
+        
         this.log = log;
         this.api = api;
         this.config = expandConfig(api, config || {});
+        
+        this.log.warn("EXPANDED CONFIG:", JSON.stringify(this.config, null, 2));
 
         // Cache for restored accessories
         this.accessories = new Map();
@@ -53,7 +57,7 @@ class PlexWebhooksPlatform {
      * Called by Homebridge when cached accessories are restored.
      */
     configureAccessory(accessory) {
-        this.log.debug('Loading accessory from cache:', accessory.displayName);
+        this.log.debug('Loading accessory from cache:', accessory.displayName, accessory.UUID);
         this.accessories.set(accessory.UUID, accessory);
     }
 
