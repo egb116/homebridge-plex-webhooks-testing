@@ -79,17 +79,21 @@ class PlexWebhooksPlatform {
           const sensorId = sensor.id || sensor.name || `Sensor-${index + 1}`;
           keepIds.add(sensorId);
 
+          // *** Use the pre-calculated UUID from the config ***
+          const uuidFromConfig = sensor.uuid; 
+
           // 1. Check if the accessory was restored from the Homebridge cache
           let accessory = this.platformAccessories.get(sensorId); 
 
           if (!accessory) {
               // Accessory not found in cache (first load or new accessory). Proceed to create/register.
-              const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${sensorId}`);
-              this.log.info(`Queued registration for new accessory [${sensor.name}] (${uuid})`);
+            
+              // LOGGING: Use the correct UUID
+              this.log.info(`Queued registration for new accessory [${sensor.name}] (${uuidFromConfig})`);
 
-              // Create the in-memory accessory object
-              accessory = new this.api.platformAccessory(sensor.name, uuid);
-              accessory.context.sensor = sensor;
+              // Create the in-memory accessory object using the pre-calculated UUID
+              accessory = new this.api.platformAccessory(sensor.name, uuidFromConfig);
+              accessory.context.sensor = sensor; // Attach the full sensor object
 
               try {
                   // Attempt to register the new accessory
@@ -100,53 +104,56 @@ class PlexWebhooksPlatform {
                   // Handle the "already bridged" error automatically
                   if (err.message.includes('already bridged')) {
                       this.log.warn(
-                          `Registration failed for [${sensor.name}] (${uuid}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
+                          // LOGGING: Use the correct UUID
+                          `Registration failed for [${sensor.name}] (${uuidFromConfig}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
                       );
                     
-                      // Attempt A: Search the map again (in case configureAccessory ran between try/catch)
+                      // Attempt A: Search the map again
                       const recoveredAccessory = Array.from(this.platformAccessories.values())
-                          .find(acc => acc.UUID === uuid || acc.displayName === sensor.name);
+                          // Use the correct UUID for the find operation
+                          .find(acc => acc.UUID === uuidFromConfig || acc.displayName === sensor.name);
 
                       if (recoveredAccessory) {
                           this.log.info(`Recovery successful (found in map). Reusing accessory.`);
                           accessory = recoveredAccessory;
-                      } else if (accessory) { 
-                          // Attempt B: Use the accessory object created just before the failed registration.
+                      } else if (accessory) { 
                           this.log.info(`Recovery successful (using in-memory object). Reusing accessory.`);
                           // The 'accessory' variable already holds the object we need.
                       } else {
                           // If all recovery steps fail, log the error and skip.
                           this.log.error(
-                              `Failed to register and recover accessory [${sensor.name}] (${uuid}):`,
+                              // LOGGING: Use the correct UUID
+                              `Failed to register and recover accessory [${sensor.name}] (${uuidFromConfig}):`,
                               err.message
                           );
                           continue; // skip this sensor
                       }
                     
                       // Finalize recovery: Update context and ensure it's mapped correctly.
-                      accessory.context.sensor = sensor; 
-                      this.platformAccessories.set(sensorId, accessory); 
+                      accessory.context.sensor = sensor; 
+                      this.platformAccessories.set(sensorId, accessory); 
 
                   } else {
                       // Handle other, unexpected errors
                       this.log.error(
-                          `Failed to register accessory [${sensor.name}] (${uuid}):`,
+                          // LOGGING: Use the correct UUID
+                          `Failed to register accessory [${sensor.name}] (${uuidFromConfig}):`,
                           err.message
                       );
                       continue; // skip this sensor
                   }
-              } 
+              } 
           } else {
-              // Accessory found in cache (subsequent run), so we reuse it.
+              // Accessory found in cache (subsequent run). Update context with the latest config.
               this.log.info(`Reusing existing accessory [${sensor.name}] (${accessory.UUID})`);
               accessory.context.sensor = sensor;
           }
 
-          // Initialize accessory wrapper
+          // Initialize accessory wrapper. Sensor contains UUID and SERIAL.
           new PlexWebhooksPlatformAccessory(this, accessory, sensor);
       }
 
-      // Remove stale cached accessories
+      // Remove stale cached accessories (rest of the function is unchanged)
       for (const [id, accessory] of this.platformAccessories.entries()) {
           if (!keepIds.has(id)) {
               this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
@@ -182,19 +189,20 @@ class PlexWebhooksPlatform {
   }
 
   _processPayload(payload) {
-    const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
+      const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
 
-    sensors
-      .filter((sensor) => {
-        const filterHelper = new FilterHelper(this.log, payload, sensor.filters);
-        this.log.verbose(`Checking rules for [${sensor.name}]`);
-        return filterHelper.match();
-      })
-      .forEach((sensor) => {
-        const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${sensor.id}`);
-        this.emitter.emit('stateChange', payload.event, uuid);
-      });
-  }
+      sensors
+        .filter((sensor) => {
+          const filterHelper = new FilterHelper(this.log, payload, sensor.filters);
+          this.log.verbose(`Checking rules for [${sensor.name}]`);
+          return filterHelper.match();
+        })
+        .forEach((sensor) => {
+          // *** Use the pre-calculated UUID from the sensor object ***
+          const uuid = sensor.uuid; 
+          this.emitter.emit('stateChange', payload.event, uuid);
+        });
+    }
 }
 
 module.exports = PlexWebhooksPlatform;
