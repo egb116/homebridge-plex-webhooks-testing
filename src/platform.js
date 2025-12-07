@@ -50,16 +50,16 @@ class PlexWebhooksPlatform {
   }
 
   /**
-   * Called by Homebridge when cached accessories are restored.
-   */
+   * Called by Homebridge when cached accessories are restored.
+   */
   configureAccessory(accessory) {
     this.log.debug('Loading accessory from cache:', accessory.displayName);
     this.accessories.set(accessory.UUID, accessory);
   }
 
   /**
-   * Cleanup invalid filters
-   */
+   * Cleanup invalid filters
+   */
   _cleanFilters() {
     const cleanFilters = (filters) => {
       if (!filters || filters.length === 0) return [];
@@ -76,8 +76,8 @@ class PlexWebhooksPlatform {
   }
 
   /**
-   * Log accessories found in config
-   */
+   * Log accessories found in config
+   */
   _logAccessoriesFoundInConfig() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
 
@@ -92,8 +92,8 @@ class PlexWebhooksPlatform {
   }
 
   /**
-   * Main discovery logic (runs after didFinishLaunching)
-   */
+   * Main discovery logic (runs after didFinishLaunching)
+   */
   _discoverAccessories() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
     const discoveredUUIDs = [];
@@ -103,9 +103,14 @@ class PlexWebhooksPlatform {
       let accessory = this.accessories.get(uuid);
 
       if (accessory) {
-        // Already restored from cache, just wrap
-        this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
+        // Already restored from cache, just wrap and update context
+        this.log.info(`Restoring accessory [${sensor.name}] (${uuid}) from cache...`);
+        
+        // Update context and name just in case config changed
         accessory.context.sensor = sensor;
+        accessory.displayName = sensor.name; // Use the current config name
+        
+        // Initialize the accessory wrapper with the restored accessory object
         new PlexWebhooksPlatformAccessory(this, accessory, sensor);
       } else {
         // New accessory: create and register
@@ -136,8 +141,8 @@ class PlexWebhooksPlatform {
   }
 
   /**
-   * Webhook payload processor
-   */
+   * Webhook payload processor
+   */
   _processPayload(payload) {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
 
