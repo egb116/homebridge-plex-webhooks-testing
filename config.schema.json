@@ -87,6 +87,7 @@
           }
         }
       },
+
       "server": {
         "type": "object",
         "required": false,
@@ -122,6 +123,7 @@
     {
       "key": "name"
     },
+    /*
     {
       "key": "sensors",
       "type": "tabarray",
@@ -188,6 +190,14 @@
         }
       ]
     },
+    */
+    // -----------------------------------------------------------
+
+    {
+      "type": "help",
+      "helpvalue": "<p class='primary-text'>Sensor configuration is temporarily disabled.</p>"
+    },
+
     {
       "key": "server",
       "title": "Webhooks Server Configuration",
