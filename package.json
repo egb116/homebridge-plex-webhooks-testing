@@ -29,7 +29,7 @@
     "CHANGELOG.md",
     "config.schema.json",
     "index.js",
-    "lib",
+    "src",
     "LICENSE",
     "README.md"
   ],
