@@ -82,18 +82,18 @@ class PlexWebhooksPlatform {
 
               } catch (err) {
                   if (err.message.includes('already bridged')) {
-                      this.log.warn(
-                          `Registration failed for [${sensor.name}] (${uuidFromConfig}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
+                      this.log.info(
+                          `Initial registration failed for [${sensor.name}] (${uuidFromConfig}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
                       );
                     
                       const recoveredAccessory = Array.from(this.platformAccessories.values())
                       .find(acc => acc.UUID === uuidFromConfig || acc.displayName === sensor.name);
 
                       if (recoveredAccessory) {
-                          this.log.warn(`Recovery successful (found in map). Reusing accessory.`);
+                          this.log.info(`Recovery successful (found in map). Reusing accessory.`);
                           accessory = recoveredAccessory;
                       } else if (accessory) { 
-                          this.log.warn(`Recovery successful (using in-memory object). Reusing accessory.`);
+                          this.log.info(`Recovery successful (using in-memory object). Reusing accessory.`);
                       } else {
                           this.log.error(
                               `Failed to register and recover accessory [${sensor.name}] (${uuidFromConfig}):`,
