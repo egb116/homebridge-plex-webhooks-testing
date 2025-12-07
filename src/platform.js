@@ -82,36 +82,31 @@ class PlexWebhooksPlatform {
     const discoveredUUIDs = [];
 
     for (const sensor of sensors) {
-      // Ensure every sensor has a proper UUID
-      const uuid = sensor.uuid || this.api.hap.uuid.generate(sensor.name);
+      const uuid = sensor.uuid;
 
-      // Check if this accessory was restored from cache
-      const cachedAccessory = this.accessories.get(uuid);
+      // Check cache first
+      let accessory = this.accessories.get(uuid);
 
-      if (cachedAccessory) {
-        // Existing accessory: update its context and wrap it
-        this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
-        cachedAccessory.context.sensor = sensor;
-        new PlexWebhooksPlatformAccessory(this, cachedAccessory, sensor);
-
-        discoveredUUIDs.push(uuid);
+      if (accessory) {
+        // Cached accessory: just update context and wrap it
+        this.log.info(`Using cached accessory [${sensor.name}] (${uuid})`);
+        accessory.context.sensor = sensor;
       } else {
-        // New accessory: create and register it
-        this.log.info(`Registering accessory [${sensor.name}] (${uuid})`);
-        const accessory = new this.api.platformAccessory(sensor.name, uuid);
+        // Brand-new accessory: create and register
+        this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
+        accessory = new this.api.platformAccessory(sensor.name, uuid);
         accessory.context.sensor = sensor;
 
-        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
-
-        // Register with Homebridge (only for new accessories!)
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         this.accessories.set(uuid, accessory);
-
-        discoveredUUIDs.push(uuid);
       }
+
+      // Wrap the accessory for our platform
+      new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+      discoveredUUIDs.push(uuid);
     }
 
-    // Remove accessories no longer in config
+    // Remove obsolete accessories
     for (const [uuid, accessory] of this.accessories) {
       if (!discoveredUUIDs.includes(uuid)) {
         this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
