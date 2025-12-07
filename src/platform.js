@@ -95,51 +95,48 @@ class PlexWebhooksPlatform {
      * Main discovery logic (runs after didFinishLaunching)
      */
     _discoverAccessories() {
-        const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
-        const discoveredUUIDs = [];
+            const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
+            const discoveredUUIDs = [];
 
-        for (const sensor of sensors) {
-            const uuid = sensor.uuid; // Already generated in config-helper
-            let accessory = this.accessories.get(uuid);
+            for (const sensor of sensors) {
+                const uuid = sensor.uuid; // Already generated in config-helper
+                let accessory = this.accessories.get(uuid);
 
-            if (accessory) {
-                // Case 1: Accessory Restored (Run 2+)
-                this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
-                accessory.context.sensor = sensor;
-                new PlexWebhooksPlatformAccessory(this, accessory, sensor);
-            } else {
-                // Case 2: New Accessory (Run 1) or Accessory Cache Corrupted
-                this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
-                accessory = new this.api.platformAccessory(sensor.name, uuid);
-                accessory.context.sensor = sensor;
+                if (accessory) {
+                    // Case 1: Accessory Restored (Run 2+)
+                    this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
+                    accessory.context.sensor = sensor;
+                    new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+                } else {
+                    // Case 2: New Accessory (Run 1) - Back to the standard, correct pattern
+                    this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
+                    accessory = new this.api.platformAccessory(sensor.name, uuid);
+                    accessory.context.sensor = sensor;
 
-                // FIX 3 (Final attempt): Unregister before register to clear stale memory reference.
-                this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-                this.log.info(`Cleared potential stale registration for [${sensor.name}]`);
+                    // FIX: Register with Homebridge FIRST to prevent bridging conflicts
+                    this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
-                // FIX 1: Register with Homebridge FIRST (Bridging Fix)
-                this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+                    // Now initialize the wrapper, which adds services
+                    new PlexWebhooksPlatformAccessory(this, accessory, sensor);
 
-                // Now initialize the wrapper, which will safely call addService
-                new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+                    // Cache for future restarts
+                    this.accessories.set(uuid, accessory);
+                }
 
-                // Cache for future restarts
-                this.accessories.set(uuid, accessory);
+                discoveredUUIDs.push(uuid);
             }
 
-            discoveredUUIDs.push(uuid);
-        }
+            // FIX: Rewrite loop to fix SyntaxError on startup (Syntax Fix)
+            // Remove cached accessories no longer in config
+            for (const entry of this.accessories.entries()) {
+                const uuid = entry[0];
+                const accessory = entry[1];
 
-        // FIX 2: Rewrite loop to fix SyntaxError on startup (Syntax Fix)
-        // Remove cached accessories no longer in config
-        for (const entry of this.accessories.entries()) {
-            const uuid = entry[0];
-            const accessory = entry[1];
-
-            if (!discoveredUUIDs.includes(uuid)) {
-                this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
-                this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-                this.accessories.delete(uuid);
+                if (!discoveredUUIDs.includes(uuid)) {
+                    this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
+                    this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+                    this.accessories.delete(uuid);
+                }
             }
         }
     }
