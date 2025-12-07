@@ -150,7 +150,17 @@ class PlexWebhooksPlatform {
   }
 
   _startWebhookServer() {
-    this.server = new WebhooksServer(this.log, this.config, (payload) => this._processPayload(payload));
+    if (this.serverStarted) {
+      this.log.debug('Webhook server already started, skipping.');
+      return;
+    }
+
+    this.serverStarted = true;
+
+    this.server = new WebhooksServer(this.log, this.config, (payload) =>
+      this._processPayload(payload)
+    );
+
     this.server.launch();
     this.log.info(`Plex Webhooks server listening on http://0.0.0.0:${this.config.server.port}`);
   }
