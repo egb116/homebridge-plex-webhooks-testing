@@ -11,65 +11,50 @@ class PlexWebhooksPlatform {
   constructor(log, config, api) {
     this.log = log;
     this.api = api;
+    this.emitter = new EventEmitter();
 
     this.log.warn(
-      "ORIGINAL CONFIG RECEIVED FROM HOMEBRIDGE:",
+      'ORIGINAL CONFIG RECEIVED FROM HOMEBRIDGE:',
       JSON.stringify(config, null, 2)
     );
 
     this.config = expandConfig(api, config || {});
-
     this.log.warn(
-      "EXPANDED CONFIG:",
+      'EXPANDED CONFIG:',
       JSON.stringify(this.config, null, 2)
     );
 
     // Map of cached/restored accessories keyed by sensor.id
     this.platformAccessories = new Map();
 
-    this.emitter = new EventEmitter();
-
     // Verbose logging helper
     this.log.verbose = (msg) => {
-      if (this.config.verbose) {
-        this.log.info(msg);
-      } else {
-        this.log.debug(msg);
-      }
+      if (this.config.verbose) this.log.info(msg);
+      else this.log.debug(msg);
     };
 
     this._cleanFilters();
 
-    // Ensure nothing else runs until Homebridge finishes launching
+    // Only run setup after Homebridge finishes launching
     this.api.on('didFinishLaunching', async () => {
       try {
-        await this._setupAccessories();
-        this._startWebhookServer();
+        await this._setupAccessories();   // Register new accessories safely
+        this._startWebhookServer();       // Start webhook server after accessories
       } catch (err) {
         this.log.error('Error during platform launch:', err);
       }
     });
   }
 
-  /**
-   * Called when Homebridge restores cached accessories
-   */
+  // Homebridge calls this to restore cached accessories
   configureAccessory(accessory) {
-    this.log.debug(
-      'Loading accessory from cache:',
-      accessory.displayName,
-      accessory.UUID
-    );
-
     const sensorId = accessory.context.sensor?.id || accessory.displayName;
     if (sensorId) {
       this.platformAccessories.set(sensorId, accessory);
+      this.log.debug('Restored cached accessory:', accessory.displayName);
     }
   }
 
-  /**
-   * Clean up filter definitions in config
-   */
   _cleanFilters() {
     const cleanFilters = (filters) => {
       if (!filters || filters.length === 0) return [];
@@ -84,9 +69,6 @@ class PlexWebhooksPlatform {
     });
   }
 
-  /**
-   * Setup all accessories after Homebridge finishes launching
-   */
   async _setupAccessories() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
     const keepIds = new Set();
@@ -145,7 +127,6 @@ class PlexWebhooksPlatform {
 
   _logAccessoriesFoundInConfig() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
-
     if (sensors.length === 0) {
       this.log.info('No accessories found in config.');
     } else if (sensors.length === 1) {
@@ -157,8 +138,9 @@ class PlexWebhooksPlatform {
   }
 
   _startWebhookServer() {
-    const server = new WebhooksServer(this.log, this.config, (payload) => this._processPayload(payload));
-    server.launch();
+    this.server = new WebhooksServer(this.log, this.config, (payload) => this._processPayload(payload));
+    this.server.launch();
+    this.log.info(`Plex Webhooks server listening on http://0.0.0.0:${this.config.server.port}`);
   }
 
   _processPayload(payload) {
