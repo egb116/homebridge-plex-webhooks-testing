@@ -79,21 +79,18 @@ class PlexWebhooksPlatform {
    */
   _discoverAccessories() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
-
     const discoveredUUIDs = [];
 
     for (const sensor of sensors) {
       const uuid = sensor.uuid;
-
       const existing = this.accessories.get(uuid);
 
       if (existing) {
-        // Existing accessory: update it
+        // Existing accessory, update its context and wrap it
         this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
         new PlexWebhooksPlatformAccessory(this, existing, sensor);
         discoveredUUIDs.push(uuid);
 
-        this.api.updatePlatformAccessories([existing]);
       } else {
         // New accessory
         this.log.info(`Registering accessory [${sensor.name}] (${uuid})`);
