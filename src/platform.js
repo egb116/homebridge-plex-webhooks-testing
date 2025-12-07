@@ -103,17 +103,21 @@ class PlexWebhooksPlatform {
             let accessory = this.accessories.get(uuid);
 
             if (accessory) {
-                // Already restored from cache, just wrap and update
+                // Case 1: Accessory Restored (Run 2+)
                 this.log.info(`Updating accessory [${sensor.name}] (${uuid})`);
                 accessory.context.sensor = sensor;
                 new PlexWebhooksPlatformAccessory(this, accessory, sensor);
             } else {
-                // New accessory: create and register
+                // Case 2: New Accessory (Run 1) or Accessory Cache Corrupted
                 this.log.info(`Registering new accessory [${sensor.name}] (${uuid})`);
                 accessory = new this.api.platformAccessory(sensor.name, uuid);
                 accessory.context.sensor = sensor;
 
-                // FIX 1: Register with Homebridge FIRST to prevent "already bridged" error
+                // FIX 3 (Final attempt): Unregister before register to clear stale memory reference.
+                this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+                this.log.info(`Cleared potential stale registration for [${sensor.name}]`);
+
+                // FIX 1: Register with Homebridge FIRST (Bridging Fix)
                 this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
 
                 // Now initialize the wrapper, which will safely call addService
@@ -125,13 +129,13 @@ class PlexWebhooksPlatform {
 
             discoveredUUIDs.push(uuid);
         }
-        
-        // FIX 2: Rewrite loop to fix SyntaxError on startup
+
+        // FIX 2: Rewrite loop to fix SyntaxError on startup (Syntax Fix)
         // Remove cached accessories no longer in config
         for (const entry of this.accessories.entries()) {
             const uuid = entry[0];
             const accessory = entry[1];
-            
+
             if (!discoveredUUIDs.includes(uuid)) {
                 this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
                 this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
