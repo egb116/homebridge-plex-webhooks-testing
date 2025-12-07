@@ -14,7 +14,7 @@ const expandConfig = (api, config) => {
 
     // UUID must be stable and unique
     const uuid = hap.uuid.generate(`plex-webhook-sensor:${idSeed}`);
-    this.log.warn("Generated UUID from config-helper.js:", uuid);
+    console.log("Generated UUID from config-helper.js:", uuid);
 
     // Short UUID is optional, but helpful as a serial number
     const serial = hap.uuid.toShortForm(uuid);
