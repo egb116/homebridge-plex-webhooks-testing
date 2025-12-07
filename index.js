@@ -1,11 +1,11 @@
-import type { API } from 'homebridge';
+'use strict';
 
-import { PlexWebhooksPlatform } from './platform.js';
-import { PLATFORM_NAME } from './settings.js';
+const { PlexWebhooksPlatform } = require('./platform');
+const { PLATFORM_NAME } = require('./settings');
 
 /**
  * This method registers the platform with Homebridge
  */
-export default (api: API) => {
+module.exports = (api) => {
   api.registerPlatform(PLATFORM_NAME, PlexWebhooksPlatform);
 };
