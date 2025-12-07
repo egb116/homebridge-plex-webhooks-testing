@@ -112,49 +112,79 @@ class PlexWebhooksPlatform {
    */
   _discoverAccessories() {
     const sensors = Array.isArray(this.config.sensors) ? this.config.sensors : [];
-    const discoveredUUIDs = new Set();
+    const discoveredUUIDs = [];
 
-    for (const sensor of sensors) {
-      // Always generate a stable UUID using sensor.id
-      const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${sensor.id}`);
-      discoveredUUIDs.add(uuid);
+    for (const [index, sensor] of sensors.entries()) {
+      // 1️⃣ Generate UUID using stable seed (backwards compatible)
+      const seed = sensor.id || sensor.name || `Sensor-${index + 1}`;
+      const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${seed}`);
 
+      this.log.info(`Sensor: ${JSON.stringify(sensor)}`);
+      this.log.info(`UUID: ${uuid}`);
+
+      // 2️⃣ Try to find accessory from restored cache
       let accessory = this.accessories.get(uuid);
-      this.log.info(`Found ${accessory} accessory by uuid match.`);
 
-      if (accessory) {
-        this.log.info(`Updating existing accessory [${sensor.name}] (${uuid})`);
-        accessory.context.sensor = sensor;
-        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
-      } else {
+      // 3️⃣ If not found, check Homebridge globally for same displayName
+      if (!accessory) {
+        accessory = Array.from(this.accessories.values()).find(
+          (a) => a.displayName === sensor.name
+        );
+        if (accessory) {
+          this.log.info(
+            `Accessory [${sensor.name}] found by displayName, reusing with new UUID (${uuid})`
+          );
+          // Map it under the new UUID
+          this.accessories.set(uuid, accessory);
+        }
+      }
+
+      // 4️⃣ If still not found, create a new accessory
+      if (!accessory) {
         this.log.info(`Registering NEW accessory [${sensor.name}] (${uuid})`);
-
         accessory = new this.api.platformAccessory(sensor.name, uuid);
         accessory.context.sensor = sensor;
 
         try {
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          this.api.registerPlatformAccessories(
+            PLUGIN_NAME,
+            PLATFORM_NAME,
+            [accessory]
+          );
         } catch (err) {
           this.log.error(
             `Failed to register accessory [${sensor.name}] (${uuid}):`,
             err.message
           );
-          continue; // skip registering this accessory
+          continue; // skip to next sensor
         }
 
-        new PlexWebhooksPlatformAccessory(this, accessory, sensor);
         this.accessories.set(uuid, accessory);
+      } else {
+        // 5️⃣ Existing accessory: just update context and reinitialize
+        this.log.info(`Reusing existing accessory [${sensor.name}] (${uuid})`);
+        accessory.context.sensor = sensor;
       }
+
+      // 6️⃣ Initialize accessory wrapper
+      new PlexWebhooksPlatformAccessory(this, accessory, sensor);
+
+      discoveredUUIDs.push(uuid);
     }
 
+    // 7️⃣ Remove stale cached accessories not in config
     for (const [uuid, accessory] of this.accessories.entries()) {
-      if (!discoveredUUIDs.has(uuid)) {
+      if (!discoveredUUIDs.includes(uuid)) {
         this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
         try {
-          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          this.api.unregisterPlatformAccessories(
+            PLUGIN_NAME,
+            PLATFORM_NAME,
+            [accessory]
+          );
         } catch (err) {
           this.log.warn(
-            `Failed to unregister accessory [${accessory.displayName}] (${uuid}):`,
+            `Failed to unregister obsolete accessory [${accessory.displayName}]:`,
             err.message
           );
         }
