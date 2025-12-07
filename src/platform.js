@@ -124,6 +124,7 @@ class PlexWebhooksPlatform {
 
       // 2️⃣ Try to find accessory from restored cache
       let accessory = this.accessories.get(uuid);
+      this.log.info(`Accessory: ${accessory}`);
 
       // 3️⃣ If not found, check Homebridge globally for same displayName
       if (!accessory) {
