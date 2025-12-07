@@ -108,31 +108,32 @@ class PlexWebhooksPlatform {
     const discoveredUUIDs = [];
 
     for (const sensor of sensors) {
-      // Always generate canonical UUID using HAP API
       const uuid = this.api.hap.uuid.generate(`plex-webhook-sensor:${sensor.id}`);
 
-      this.log.info(`Sensor: ${JSON.stringify(sensor)}`);
-      this.log.info(`UUID: ${uuid}`);
-
       let accessory = this.accessories.get(uuid);
-      this.log.info(`Accessory: ${accessory ? accessory.displayName : 'null'}`);
 
       if (accessory) {
         this.log.info(`Updating existing accessory [${sensor.name}] (${uuid})`);
         accessory.context.sensor = sensor;
         new PlexWebhooksPlatformAccessory(this, accessory, sensor);
       } else {
-        this.log.info(`Registering NEW accessory [${sensor.name}] (${uuid})`);
+          const phantomAccessory = this.api.platformAccessory(uuid);
+        if (phantomAccessory) {
+          this.log.warn(
+            `Detected stale accessory [${sensor.name}] (${uuid}) from previous install. Cleaning up.`
+          );
+          try {
+            this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [phantomAccessory]);
+          } catch (err) {
+            this.log.warn(`Failed to remove stale accessory: ${err.message}`);
+          }
+        }
 
+        this.log.info(`Registering NEW accessory [${sensor.name}] (${uuid})`);
         accessory = new this.api.platformAccessory(sensor.name, uuid);
         accessory.context.sensor = sensor;
 
-        this.api.registerPlatformAccessories(
-          PLUGIN_NAME,
-          PLATFORM_NAME,
-          [accessory]
-        );
-
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         new PlexWebhooksPlatformAccessory(this, accessory, sensor);
 
         this.accessories.set(uuid, accessory);
@@ -141,15 +142,11 @@ class PlexWebhooksPlatform {
       discoveredUUIDs.push(uuid);
     }
 
-    // Remove stale cached accessories not in config
+    // Remove stale accessories no longer in config
     for (const [uuid, accessory] of this.accessories.entries()) {
       if (!discoveredUUIDs.includes(uuid)) {
         this.log.info(`Removing obsolete accessory: ${accessory.displayName}`);
-        this.api.unregisterPlatformAccessories(
-          PLUGIN_NAME,
-          PLATFORM_NAME,
-          [accessory]
-        );
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         this.accessories.delete(uuid);
       }
     }
