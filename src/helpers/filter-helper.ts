@@ -1,15 +1,27 @@
-'use strict';
+import { Logging } from 'homebridge';
+import { get } from 'lodash';
 
-const { get } = require('lodash');
+// Define types for filter rule
+interface FilterRule {
+  path: string;
+  value: any;
+  operator?: '===' | '!==' | string; // Default to '==='
+}
+
+type FilterGroup = FilterRule[];
 
 class FilterHelper {
-  constructor(log, payload, filters) {
+  private log: Logging;
+  private payload: Record<string, any>;
+  private filters: FilterGroup[];
+
+  constructor(log: Logging, payload: Record<string, any>, filters: FilterGroup | undefined) {
     this.log = log;
     this.payload = payload || {};
     this.filters = Array.isArray(filters) ? filters : [];
   }
 
-  _matchFilterPair(path, value, operator = '===') {
+  private _matchFilterPair(path: string, value: any, operator: string = '==='): boolean {
     const payloadValue = get(this.payload, path);
     const expected = String(value);
     const actual = payloadValue != null ? String(payloadValue) : '';
@@ -32,7 +44,7 @@ class FilterHelper {
     return isMatched;
   }
 
-  _matchFilterArray(filterArr) {
+  private _matchFilterArray(filterArr: FilterGroup): boolean {
     if (!Array.isArray(filterArr)) return false;
 
     let allMatch = true;
@@ -51,7 +63,7 @@ class FilterHelper {
     return allMatch;
   }
 
-  match() {
+  public match(): boolean {
     if (this.filters.length === 0) {
       this.log.verbose(' > no filters provided → matching by default');
       return true;
@@ -72,4 +84,4 @@ class FilterHelper {
   }
 }
 
-module.exports = FilterHelper;
+export = FilterHelper;

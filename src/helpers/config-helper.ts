@@ -1,8 +1,20 @@
-'use strict';
+import { API } from 'homebridge';
 
-const expandConfig = (api, config) => {
+interface SensorConfig {
+  name: string | undefined;
+  uuid?: string;
+  sn?: string;
+  [key: string]: any; // Allows other properties to be part of the sensor config
+}
+
+interface PlatformConfig {
+  sensors?: SensorConfig[];
+  [key: string]: any; // Allows other properties to be part of the platform config
+}
+
+const expandConfig = (api: API, config: PlatformConfig): PlatformConfig => {
   const { hap } = api;
-  const { sensors = [] } = config || {};
+  const { sensors = [] } = config;
 
   const sensorsWithUuid = sensors.map((sensor) => {
     const name = typeof sensor.name === 'string'
@@ -27,4 +39,4 @@ const expandConfig = (api, config) => {
   };
 };
 
-module.exports = expandConfig;
+export = expandConfig;

@@ -1,14 +1,27 @@
-'use strict';
+// src/landingPage.ts
 
-const escapeHtml = (str) =>
+/**
+ * Escapes special HTML characters to prevent XSS vulnerabilities
+ * @param str The string to be escaped
+ * @returns The escaped HTML string
+ */
+const escapeHtml = (str: string): string => 
   String(str).replace(/[&<>"']/g, (m) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
+    { 
+      '&': '&amp;', 
+      '<': '&lt;', 
+      '>': '&gt;', 
+      '"': '&quot;', 
+      "'": '&#39;' 
+    }[m] || m
   ));
 
 /**
  * Landing page shown when visiting http://host:port/
+ * @param url The URL to be displayed on the landing page
+ * @returns The HTML markup for the landing page
  */
-const landingPage = (url) => {
+const landingPage = (url: string): string => {
   const safeUrl = escapeHtml(url);
 
   return `
@@ -81,4 +94,4 @@ const landingPage = (url) => {
   `;
 };
 
-module.exports = landingPage;
+export = landingPage;
