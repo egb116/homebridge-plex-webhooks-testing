@@ -1,5 +1,5 @@
 {
-  "name": "homebridge-plex-webhooks2",
+  "name": "homebridge-plex-webhooks-testing",
   "version": "3.0.0-beta1",
   "description": "Homebridge 2.0 Plex Webhooks Server",
   "main": "index.js",
@@ -38,9 +38,9 @@
   },
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/egb116/homebridge-plex-webhooks2/issues"
+    "url": "https://github.com/egb116/homebridge-plex-webhooks-testing/issues"
   },
-  "homepage": "https://github.com/egb116/homebridge-plex-webhooks2#readme",
+  "homepage": "https://github.com/egb116/homebridge-plex-webhooks-testing#readme",
   "dependencies": {
     "body-parser": "^1.20.0",
     "chalk": "^4.1.0",
