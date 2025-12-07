@@ -99,7 +99,7 @@ class PlexWebhooksPlatform {
             const discoveredUUIDs = [];
 
             for (const sensor of sensors) {
-                const uuid = sensor.uuid; // Already generated in config-helper
+                const uuid = sensor.uuid;
                 let accessory = this.accessories.get(uuid);
 
                 if (accessory) {
@@ -126,7 +126,6 @@ class PlexWebhooksPlatform {
                 discoveredUUIDs.push(uuid);
             }
 
-            // FIX: Rewrite loop to fix SyntaxError on startup (Syntax Fix)
             // Remove cached accessories no longer in config
             for (const entry of this.accessories.entries()) {
                 const uuid = entry[0];
@@ -139,7 +138,6 @@ class PlexWebhooksPlatform {
                 }
             }
         }
-    }
 
     /**
      * Webhook payload processor
