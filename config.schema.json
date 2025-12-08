@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "PlexWebhooksHB2",
+  "pluginAlias": "PlexWebhooks",
   "pluginType": "platform",
   "singular": true,
   "headerDisplay": "Once you're ready with the configuration, you'll find the listening URL in the Homebridge logs. The URL should be added on your Plex Media Server's Webhooks page. You can find more details about the configuration on the [plugin's GitHub page](https://github.com/egb116/homebridge-plex-webhooks/blob/master/README.md).",

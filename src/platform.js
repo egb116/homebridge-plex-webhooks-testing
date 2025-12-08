@@ -88,8 +88,7 @@ class PlexWebhooksPlatform {
         } catch (err) {
           if (err.message.includes('already bridged')) {
             this.log.info(
-              `Initial registration failed for [${sensor.name}] (${uuidFromConfig}).
-               Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
+              `Initial registration failed for [${sensor.name}] (${uuidFromConfig}). Accessory appears to be bridged but was not in cache. Attempting automated recovery.`
             );
 
             const recoveredAccessory = Array.from(this.platformAccessories.values())

@@ -1,8 +1,8 @@
 'use strict';
 
-const PLATFORM_NAME = 'PlexWebhooksHB2';
+const PLATFORM_NAME = 'PlexWebhooks';
 
-const PLUGIN_NAME = 'homebridge-plex-webhooks-testing';
+const PLUGIN_NAME = 'homebridge-plex-webhooks';
 
 module.exports = {
   PLATFORM_NAME,
