@@ -33,7 +33,7 @@ class PlexWebhooksPlatformAccessory {
       this.accessory.getServiceById(Service.OccupancySensor, sensor.uuid) ||
       this.accessory.addService(Service.OccupancySensor, sensor.name, sensor.uuid);
 
-      this.service.setCharacteristic(Characteristic.Name, sensor.name);
+    this.service.setCharacteristic(Characteristic.Name, sensor.name);
 
     this.service
       .getCharacteristic(Characteristic.OccupancyDetected)

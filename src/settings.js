@@ -6,5 +6,5 @@ const PLUGIN_NAME = 'homebridge-plex-webhooks-testing';
 
 module.exports = {
   PLATFORM_NAME,
-  PLUGIN_NAME,
+  PLUGIN_NAME
 };

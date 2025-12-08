@@ -1,11 +1,11 @@
 'use strict';
 
-const escapeHtml = (str) =>
-  String(str).replace(/[&<>"']/g, (m) => (
+const escapeHtml = str =>
+  String(str).replace(/[&<>"']/g, m => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
   ));
 
-const landingPage = (url) => {
+const landingPage = url => {
   const safeUrl = escapeHtml(url);
 
   return `
